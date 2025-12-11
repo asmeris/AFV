@@ -1,0 +1,7 @@
+{
+  "name": "Aura Farming Video",
+  "description": "Generate high-aura videos for social media using Google Veo. Add glowing effects, anime-style energy, and cinematic atmospheres to your photos.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
