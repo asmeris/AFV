@@ -17,23 +17,52 @@ const App: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [videoResult, setVideoResult] = useState<VideoResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper to process file (used by both input change and drop)
+  const processFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+        alert("Please upload a valid image file (PNG, JPEG, WebP).");
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size too large. Please use an image under 5MB.");
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Handlers
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File size too large. Please use an image under 5MB.");
-        return;
-      }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      processFile(file);
+    }
+  };
+
+  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
     }
   };
 
@@ -146,9 +175,17 @@ const App: React.FC = () => {
         <label className="block text-sm font-medium text-gray-300 mb-3 uppercase tracking-wider">Source Material (Optional)</label>
         <div 
             onClick={() => fileInputRef.current?.click()}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
             className={`
-                border-2 border-dashed rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer transition-all
-                ${imagePreview ? 'border-aura-purple bg-black/20' : 'border-gray-700 hover:border-gray-500 hover:bg-white/5'}
+                border-2 border-dashed rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer transition-all duration-200
+                ${imagePreview 
+                    ? 'border-aura-purple bg-black/20' 
+                    : isDragging
+                        ? 'border-aura-cyan bg-aura-cyan/10 scale-[1.01] shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+                        : 'border-gray-700 hover:border-gray-500 hover:bg-white/5'
+                }
             `}
         >
             {imagePreview ? (
@@ -162,13 +199,21 @@ const App: React.FC = () => {
                     </button>
                 </div>
             ) : (
-                <div className="text-center p-6">
-                    <div className="mx-auto h-12 w-12 text-gray-400 mb-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                <div className="text-center p-6 pointer-events-none">
+                    <div className={`mx-auto h-12 w-12 mb-3 transition-colors ${isDragging ? 'text-aura-cyan' : 'text-gray-400'}`}>
+                        {isDragging ? (
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                             </svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        )}
                     </div>
-                    <p className="text-gray-300 font-medium">Click to upload photo</p>
+                    <p className={`font-medium transition-colors ${isDragging ? 'text-aura-cyan' : 'text-gray-300'}`}>
+                        {isDragging ? "Drop to Infuse Energy" : "Click or Drag Photo Here"}
+                    </p>
                     <p className="text-gray-500 text-sm mt-1">For best aura results, use a full body or portrait shot</p>
                 </div>
             )}
